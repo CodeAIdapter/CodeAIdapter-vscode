@@ -9,13 +9,24 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": ["onCommand:codeaidapter.helloWorld"],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "codeaidapter.helloWorld",
         "title": "Hello World"
+      }, 
+      {
+        "command": "codeaidapter.openCodeTransform",
+        "title": "AI 代碼轉換"
+      },
+      {
+        "command": "codeaidapter.openToolingAgent",
+        "title": "自動偵錯"
+      },
+      {
+        "command": "codeaidapter.openEnvironmentDeploy",
+        "title": "自動部署"
       }
     ]
   },
