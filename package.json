@@ -11,25 +11,25 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "codeaidapter.helloWorld",
-        "title": "Hello World"
-      }, 
-      {
-        "command": "codeaidapter.openCodeTransform",
-        "title": "AI 代碼轉換"
-      },
-      {
-        "command": "codeaidapter.openToolingAgent",
-        "title": "自動偵錯"
-      },
-      {
-        "command": "codeaidapter.openEnvironmentDeploy",
-        "title": "自動部署"
-      }
-    ]
-  },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "codeaidapterSidebar",
+          "title": "CodeAIdapter",
+          "icon": "src/img/temp3.png"
+        }
+      ]
+    },
+    "views": {
+      "codeaidapterSidebar": [
+        {
+          "id": "codeaidapter.sidebarView",
+          "name": "CodeAIdapter 控制台",
+          "type": "webview"
+        }
+      ]
+    }
+  }, 
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
