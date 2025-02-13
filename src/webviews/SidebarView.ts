@@ -243,15 +243,13 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                     const chatContainer = document.getElementById('chatContainer');
                     const text = userInput.value.trim();
                     const file = fileInput.files?.[0]; // 確保 file 不會是 undefined
-                if (!text) {
-                    const inputBox = document.getElementById("userInput");
-                    inputBox.style.border = "2px solid red"; 
-                    setTimeout(() => inputBox.style.border = "", 1500); // 1.5 秒後恢復
-                    return;
-                }
-
+                    if (!text) {
+                        const inputBox = document.getElementById("userInput");
+                        inputBox.style.border = "2px solid red"; 
+                        setTimeout(() => inputBox.style.border = "", 1500); // 1.5 秒後恢復
+                        return;
+                    }
                     const message = { command: 'execute', text };
-
                     // **新增使用者訊息到 UI**
                     const userMessage = document.createElement('div');
                     userMessage.classList.add('message', 'user-message');
@@ -270,12 +268,55 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                             fileMessage.classList.add('message', 'user-message');
                             fileMessage.textContent = "已上傳檔案: " + file.name;
                             chatContainer.appendChild(fileMessage);
+                            
+                            // **Send data to Flask API**
+                            fetch('http://localhost:8080/api', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    prompt: text,
+                                    file: event.target.result // Send file content as string
+                                })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                console.log('Success:', data);
+                            })
+                            .catch((error) => {
+                                console.error('Error:', error);
+                            });
+
+
+
+
                             vscode.postMessage(message); // 傳送文字與檔案
                         };
                         reader.readAsText(file);
                         const fileNameDisplay = document.getElementById("fileName");
                         fileNameDisplay.textContent = "未選擇檔案";
                     } else {
+
+
+                        fetch('http://localhost:8080/api', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                prompt: text,
+                                file: "" // Send empty string if no file is selected
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('Success:', data);
+                        })
+                        .catch((error) => {
+                            console.error('Error:', error);
+                        });
+
                         vscode.postMessage(message); // 只傳送文字
                     }
 
