@@ -42,6 +42,40 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                 }
                 // vscode.window.showInformationMessage(logMessage); // 顯示右下角的提示字元
             }
+            if (message.command === 'response') {
+                console.log("收到 Webview 回傳:", message);
+                vscode.window.showInformationMessage("Webview Response: " + message.file);
+                // Webview 傳送訊息回去
+                webviewView.webview.postMessage({
+                    command: 'response',
+                    file: message.file,
+                    filename: message.filename,
+                    message: message.message
+                });
+            }
+
+            // **正確處理 Webview 發送的 createFile 指令**
+            if (message.command === 'createFile') {
+                const folderUri = vscode.workspace.workspaceFolders?.[0]?.uri;
+                if (!folderUri) {
+                    vscode.window.showErrorMessage("請先開啟一個專案資料夾！");
+                    return;
+                }
+
+                try {
+                    const filePath = vscode.Uri.joinPath(folderUri, message.filename);
+                    console.log("正在創建檔案:", filePath.fsPath);
+                    console.log("檔名：", message.filename);
+                    console.log("檔案內容", message.file);
+                    
+                    // **將內容寫入檔案**
+                    await vscode.workspace.fs.writeFile(filePath, Buffer.from(message.file, 'utf-8'));
+
+                    vscode.window.showInformationMessage(`已成功建立檔案: ${message.filename}`);
+                } catch (error) {
+                    vscode.window.showErrorMessage(`創建檔案失敗: ${error}`);
+                }
+            }
             // if (message.command === 'upload') {
             //     const folderUri = vscode.workspace.workspaceFolders?.[0]?.uri;
             //     if (!folderUri) {
@@ -165,7 +199,11 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                     cursor: pointer;
                     font-size: clamp(14px, 2vw, 20px);
                 }
-                button:hover {
+                button:disabled {
+                    background-color: #888; /* 禁用狀態的背景色 */
+                    cursor: not-allowed; /* 禁用狀態的鼠標樣式 */
+                }
+                button:hover:enabled {
                     background-color: #0056b3;
                 }
                 textarea {
@@ -223,30 +261,6 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
             <script>
                 const vscode = acquireVsCodeApi(); // 獲取 VS Code API 以便傳送訊息
 
-                // 監聽 VS Code 傳來的訊息
-                window.addEventListener('message', (event) => {
-                    const message = event.data;
-
-                    if (message.command === 'updateFileName') {
-                        console.log("收到來自 VS Code 的檔名:", message.fileName);
-                        document.getElementById('fileContent').innerText = message.fileName || "（沒有開啟的檔案）";
-                    }
-
-                    // **AI 訊息顯示在 UI**
-                    const chatContainer = document.getElementById('chatContainer');
-                    if (message.command === 'response') {
-                        // 清除定時器
-                        clearInterval(waitingInterval);
-                        const aiMessage = document.createElement('div');
-                        aiMessage.classList.add('message', 'ai-message');
-                        aiMessage.textContent = message.text;
-                        chatContainer.appendChild(aiMessage);
-                        
-                        // 滾動到底部
-                        aiMessage.scrollIntoView({ behavior: 'smooth' });
-                    }
-
-                });
                 let waitingInterval;
                 function sendMessage() {
                     const userInput = document.getElementById('userInput');
@@ -276,6 +290,10 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                     userMessage.textContent = text;
                     chatContainer.appendChild(userMessage);
                     userMessage.scrollIntoView({ behavior: 'smooth' });
+
+
+                    // 禁用 Send 按鈕
+                    document.querySelector('button').disabled = true;
 
                     if (file) {
                         const reader = new FileReader();
@@ -330,11 +348,11 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                         waitingMessage.textContent = "請稍等...";
                         chatContainer.appendChild(waitingMessage);
                         chatContainer.scrollTop = chatContainer.scrollHeight;
-                    }, 1000);
+                    }, 5000);
                 }
 
                 function sendDataToAPI(prompt, fileContent = "", fileName = "") {
-                    fetch('http://localhost:8080/api', {
+                    fetch('http://35.209.61.84:8080/api', { //http://35.209.61.84:8080/api http://localhost:8080/api
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -348,9 +366,27 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                     .then(response => response.json())
                     .then(data => {
                         console.log('Success:', data);
+                        vscode.postMessage({
+                            command: 'response',
+                            file: data.file,
+                            filename: data.filename,
+                            message: data.message
+                        });
+                        // 重新启用 Send 按钮
+                        document.querySelector('button').disabled = false;
+                        // 清除定时器
+                        // clearInterval(waitingInterval);
                     })
                     .catch(error => {
                         console.error('Error:', error);
+                        vscode.postMessage({
+                            command: 'response',
+                            file: "",
+                            filename: "",
+                            message: error.message
+                        });
+                        // 重新启用 Send 按钮
+                        document.querySelector('button').disabled = false;
                     });
                 }
 
@@ -387,6 +423,43 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                         } else {
                             fileNameDisplay.textContent = "未選擇檔案";
                         }
+                    });
+                    // 監聽 VS Code 傳來的訊息
+                    window.addEventListener('message', (event) => {
+                        const message = event.data;
+                        console.log('message command:', message.command);
+                        if (message.command === 'updateFileName') {
+                            console.log("收到來自 VS Code 的檔名:", message.fileName);
+                            document.getElementById('fileContent').innerText = message.fileName || "（沒有開啟的檔案）";
+                        }
+
+                        // **AI 訊息顯示在 UI**
+                        const chatContainer = document.getElementById('chatContainer');
+                        if (message.command === 'response') {
+                            console.log('Received response:', message); // 打印接收到的 response 消息
+                            // 清除定時器
+                            clearInterval(waitingInterval);
+                            const aiMessage = document.createElement('div');
+                            aiMessage.classList.add('message', 'ai-message');
+                            aiMessage.textContent = "先測試檔案內容是什麼: " + message.file;
+                            chatContainer.appendChild(aiMessage);
+                            
+                            // 滾動到底部
+                            aiMessage.scrollIntoView({ behavior: 'smooth' });
+                            // vscode.window.showInformationMessage("Response received: " + message.message);
+                            // **如果 message.filename 存在，則通知 VS Code 創建檔案**
+                            if (message.filename && message.filename.trim() !== '') {
+                                console.log("準備創建檔案:", message.filename, "類型:", typeof message.file);
+                                console.log("檔案內容呢:", message.file);
+
+                                vscode.postMessage({
+                                    command: 'createFile',
+                                    filename: message.filename,
+                                    file: message.file
+                                });
+                            }
+                        }
+
                     });
                 });
 
