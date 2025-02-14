@@ -99,6 +99,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                     overflow-y: auto;
                     display: flex;
                     flex-direction: column;
+                    margin-bottom: 125px;
                 }
 
                 /* 訊息泡泡 */
@@ -230,8 +231,23 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                         console.log("收到來自 VS Code 的檔名:", message.fileName);
                         document.getElementById('fileContent').innerText = message.fileName || "（沒有開啟的檔案）";
                     }
-                });
 
+                    // **AI 訊息顯示在 UI**
+                    const chatContainer = document.getElementById('chatContainer');
+                    if (message.command === 'response') {
+                        // 清除定時器
+                        clearInterval(waitingInterval);
+                        const aiMessage = document.createElement('div');
+                        aiMessage.classList.add('message', 'ai-message');
+                        aiMessage.textContent = message.text;
+                        chatContainer.appendChild(aiMessage);
+                        
+                        // 滾動到底部
+                        aiMessage.scrollIntoView({ behavior: 'smooth' });
+                    }
+
+                });
+                let waitingInterval;
                 function sendMessage() {
                     const userInput = document.getElementById('userInput');
                     const fileInput = document.getElementById('fileInput');
@@ -259,6 +275,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                     userMessage.classList.add('message', 'user-message');
                     userMessage.textContent = text;
                     chatContainer.appendChild(userMessage);
+                    userMessage.scrollIntoView({ behavior: 'smooth' });
 
                     if (file) {
                         const reader = new FileReader();
@@ -271,7 +288,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                                 errorMessage.classList.add('message', 'ai-message');
                                 errorMessage.textContent = "⚠️ "+ file.name + " 的內容太大，請選擇小於 3000 字元的檔案";
                                 chatContainer.appendChild(errorMessage);
-                                chatContainer.scrollTop = chatContainer.scrollHeight;
+                                errorMessage.scrollIntoView({ behavior: 'smooth' }); // 滾動到底部
                                 return;
                             }
 
@@ -284,6 +301,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                             fileMessage.classList.add('message', 'user-message');
                             fileMessage.textContent = "已上傳檔案: " + file.name;
                             chatContainer.appendChild(fileMessage);
+                            fileMessage.scrollIntoView({ behavior: 'smooth' }); // 滾動到底部
                             
                             // **Send data to Flask API**
                             sendDataToAPI(text, event.target.result, file.name);
@@ -303,7 +321,16 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                     fileInput.value = "";
 
                     // 滾動到底部
-                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                    // chatContainer.scrollTop = chatContainer.scrollHeight;
+
+                    // 設置定時器，每三秒顯示一次“請稍等”
+                    waitingInterval = setInterval(() => {
+                        const waitingMessage = document.createElement('div');
+                        waitingMessage.classList.add('message', 'ai-message');
+                        waitingMessage.textContent = "請稍等...";
+                        chatContainer.appendChild(waitingMessage);
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                    }, 1000);
                 }
 
                 function sendDataToAPI(prompt, fileContent = "", fileName = "") {
@@ -327,22 +354,6 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                     });
                 }
 
-
-                window.addEventListener('message', (event) => {
-                    const message = event.data;
-                    const chatContainer = document.getElementById('chatContainer');
-
-                    if (message.command === 'response') {
-                        // **AI 訊息顯示在 UI**
-                        const aiMessage = document.createElement('div');
-                        aiMessage.classList.add('message', 'ai-message');
-                        aiMessage.textContent = message.text;
-                        chatContainer.appendChild(aiMessage);
-
-                        // 滾動到底部
-                        chatContainer.scrollTop = chatContainer.scrollHeight;
-                    }
-                });
 
                 // function uploadFile() {
                 //     const fileInput = document.getElementById('fileInput');
