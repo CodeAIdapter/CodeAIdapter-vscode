@@ -244,6 +244,15 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                         setTimeout(() => inputBox.style.border = "", 1500); // 1.5 秒後恢復
                         return;
                     }
+                    if (text.length > 3000) {
+                        const errorMessage = document.createElement('div');
+                        errorMessage.classList.add('message', 'ai-message');
+                        errorMessage.textContent = "⚠️ 輸入的內容文字太多，請輸入小於 3000 字元";
+                        chatContainer.appendChild(errorMessage);
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                        return;
+                    }
+
                     const message = { command: 'execute', text };
                     // **新增使用者訊息到 UI**
                     const userMessage = document.createElement('div');
@@ -254,6 +263,18 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                     if (file) {
                         const reader = new FileReader();
                         reader.onload = function (event) {
+                            const fileContent = event.target.result;
+                            // Can't send file content if it's too large(>3000)
+
+                            if (fileContent.length > 3000) {
+                                const errorMessage = document.createElement('div');
+                                errorMessage.classList.add('message', 'ai-message');
+                                errorMessage.textContent = "⚠️ "+ file.name + " 的內容太大，請選擇小於 3000 字元的檔案";
+                                chatContainer.appendChild(errorMessage);
+                                chatContainer.scrollTop = chatContainer.scrollHeight;
+                                return;
+                            }
+
                             message.fileName = file.name;
                             message.fileType = file.type;
                             message.fileContent = event.target.result;
@@ -265,55 +286,15 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                             chatContainer.appendChild(fileMessage);
                             
                             // **Send data to Flask API**
-                            fetch('http://localhost:8080/api', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    prompt: text,
-                                    file: event.target.result,  // Send file content as string
-                                    filename: file.name
-                                })
-                            })
-                            .then(response => response.json())
-                            .then(data => {
-                                console.log('Success:', data);
-                            })
-                            .catch((error) => {
-                                console.error('Error:', error);
-                            });
-
-
-
-
+                            sendDataToAPI(text, event.target.result, file.name);
                             vscode.postMessage(message); // 傳送文字與檔案
                         };
                         reader.readAsText(file);
                         const fileNameDisplay = document.getElementById("fileName");
                         fileNameDisplay.textContent = "未選擇檔案";
                     } else {
-
-
-                        fetch('http://localhost:8080/api', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                prompt: text,
-                                file: "",  // Send empty string if no file is selected
-                                filename: ""
-                            })
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            console.log('Success:', data);
-                        })
-                        .catch((error) => {
-                            console.error('Error:', error);
-                        });
-
+                        // **Send data to Flask API**
+                        sendDataToAPI(text);
                         vscode.postMessage(message); // 只傳送文字
                     }
 
@@ -324,6 +305,28 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                     // 滾動到底部
                     chatContainer.scrollTop = chatContainer.scrollHeight;
                 }
+
+                function sendDataToAPI(prompt, fileContent = "", fileName = "") {
+                    fetch('http://localhost:8080/api', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            prompt,
+                            file: fileContent,  // 如果沒有檔案，就傳空字串
+                            filename: fileName
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Success:', data);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+                }
+
 
                 window.addEventListener('message', (event) => {
                     const message = event.data;
