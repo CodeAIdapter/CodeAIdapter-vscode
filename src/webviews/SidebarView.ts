@@ -156,6 +156,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                 .ai-message {
                     align-self: flex-start;
                     background-color: #444;
+                    white-space: pre-wrap; /* 保留換行符 */
                 }
 
                 /* 輸入區域 */
@@ -441,7 +442,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                             clearInterval(waitingInterval);
                             const aiMessage = document.createElement('div');
                             aiMessage.classList.add('message', 'ai-message');
-                            aiMessage.textContent = "先測試檔案內容是什麼: " + message.file;
+                            aiMessage.textContent = message.message;
                             chatContainer.appendChild(aiMessage);
                             
                             // 滾動到底部
