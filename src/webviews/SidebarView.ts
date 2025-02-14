@@ -35,28 +35,23 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                         vscode.window.showErrorMessage("請先開啟一個專案資料夾！");
                         return;
                     }
-        
                     // 轉換 Base64 成 buffer，然後寫入檔案
                     const filePath = vscode.Uri.joinPath(folderUri, message.fileName);
                     await vscode.workspace.fs.writeFile(filePath, Buffer.from(message.fileContent.split(",")[1], 'base64'));
-        
                     logMessage += `\n已上傳檔案: ${message.fileName}`;
                 }
-        
                 // vscode.window.showInformationMessage(logMessage); // 顯示右下角的提示字元
             }
-            if (message.command === 'upload') {
-                const folderUri = vscode.workspace.workspaceFolders?.[0]?.uri;
-                if (!folderUri) {
-                    vscode.window.showErrorMessage("請先開啟一個專案資料夾！");
-                    return;
-                }
-        
-                const filePath = vscode.Uri.joinPath(folderUri, message.fileName);
-                await vscode.workspace.fs.writeFile(filePath, Buffer.from(message.fileContent.split(",")[1], 'base64'));
-        
-                vscode.window.showInformationMessage(`檔案 ${message.fileName} 已成功上傳！`);
-            }
+            // if (message.command === 'upload') {
+            //     const folderUri = vscode.workspace.workspaceFolders?.[0]?.uri;
+            //     if (!folderUri) {
+            //         vscode.window.showErrorMessage("請先開啟一個專案資料夾！");
+            //         return;
+            //     }
+            //     const filePath = vscode.Uri.joinPath(folderUri, message.fileName);
+            //     await vscode.workspace.fs.writeFile(filePath, Buffer.from(message.fileContent.split(",")[1], 'base64'));
+            //     vscode.window.showInformationMessage(`檔案 ${message.fileName} 已成功上傳！`);
+            // }
         });
     }
     private sendCurrentFileContent() {
@@ -73,7 +68,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
             });
         }
         else {
-            console.log("⚠️ 沒有開啟的檔案");
+            //console.log("⚠️ 沒有開啟的檔案");
         }
     }
 
@@ -277,7 +272,8 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                                 },
                                 body: JSON.stringify({
                                     prompt: text,
-                                    file: event.target.result // Send file content as string
+                                    file: event.target.result,  // Send file content as string
+                                    filename: file.name
                                 })
                             })
                             .then(response => response.json())
@@ -306,7 +302,8 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                             },
                             body: JSON.stringify({
                                 prompt: text,
-                                file: "" // Send empty string if no file is selected
+                                file: "",  // Send empty string if no file is selected
+                                filename: ""
                             })
                         })
                         .then(response => response.json())
@@ -344,28 +341,28 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                     }
                 });
 
-                function uploadFile() {
-                    const fileInput = document.getElementById('fileInput');
-                    const file = fileInput.files[0]; // 取得使用者選擇的第一個檔案
+                // function uploadFile() {
+                //     const fileInput = document.getElementById('fileInput');
+                //     const file = fileInput.files[0]; // 取得使用者選擇的第一個檔案
 
-                    if (!file) {
-                        alert("請選擇一個檔案！");
-                        return;
-                    }
+                //     if (!file) {
+                //         alert("請選擇一個檔案！");
+                //         return;
+                //     }
 
-                    const reader = new FileReader();
-                    reader.onload = function(event) {
-                        const fileContent = event.target.result; // 讀取檔案內容為 Base64 或純文字
-                        vscode.postMessage({
-                            command: 'upload',
-                            fileName: file.name,
-                            fileType: file.type,
-                            fileContent: fileContent // 這裡會是 Base64 編碼或文字
-                        });
-                    };
+                //     const reader = new FileReader();
+                //     reader.onload = function(event) {
+                //         const fileContent = event.target.result; // 讀取檔案內容為 Base64 或純文字
+                //         vscode.postMessage({
+                //             command: 'upload',
+                //             fileName: file.name,
+                //             fileType: file.type,
+                //             fileContent: fileContent // 這裡會是 Base64 編碼或文字
+                //         });
+                //     };
                     
-                    reader.readAsDataURL(file); // 以 Base64 格式讀取檔案
-                }
+                //     reader.readAsDataURL(file); // 以 Base64 格式讀取檔案
+                // }
 
                 document.addEventListener("DOMContentLoaded", function() {
                     const fileInput = document.getElementById("fileInput");
@@ -380,23 +377,23 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                 });
 
             </script>
-            </head>
-            <body>
-                <h3>目前開啟的檔案：</h3>
-                <div class="file-content-box" id="fileContent">正在載入...</div>
-                <div class="chat-container" id="chatContainer">
-                    <!-- 這裡放對話歷史 -->
-                </div>
-                <div class="input-box">
-                    <textarea id="userInput" placeholder="輸入訊息..."></textarea>
-                    <button onclick="sendMessage()">Send</button>
-                    <label for="fileInput" class="custom-file-upload">
-                        Upload File
-                    </label>
-                    <input type="file" id="fileInput" hidden />
-                    <span id="fileName">未選擇檔案</span>  <!-- 顯示檔名 -->
-                </div>
-            </body>
+        </head>
+        <body>
+            <h3>目前開啟的檔案：</h3>
+            <div class="file-content-box" id="fileContent">正在載入...</div>
+            <div class="chat-container" id="chatContainer">
+                <!-- 這裡放對話歷史 -->
+            </div>
+            <div class="input-box">
+                <textarea id="userInput" placeholder="輸入訊息..."></textarea>
+                <button onclick="sendMessage()">Send</button>
+                <label for="fileInput" class="custom-file-upload">
+                    Upload File
+                </label>
+                <input type="file" id="fileInput" hidden />
+                <span id="fileName">未選擇檔案</span>  <!-- 顯示檔名 -->
+            </div>
+        </body>
         </html>`;
     }    
 }
