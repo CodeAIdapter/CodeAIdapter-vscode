@@ -1,0 +1,9 @@
+For Mac
+
+1. npx tsc
+2. CMD+shift+D, click "Run" to start the process
+3. CMD+shift+P, 下指令（codeaidapter.?，參考 package.json）
+
+For get message
+1. 需要取得檔案嗎？或者直接傳入輸入框框
+2. AI 回傳的內容

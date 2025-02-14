@@ -9,16 +9,27 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": ["onCommand:codeaidapter.helloWorld"],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "codeaidapter.helloWorld",
-        "title": "Hello World"
-      }
-    ]
-  },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "codeaidapterSidebar",
+          "title": "CodeAIdapter",
+          "icon": "src/img/temp3.png"
+        }
+      ]
+    },
+    "views": {
+      "codeaidapterSidebar": [
+        {
+          "id": "codeaidapter.sidebarView",
+          "name": "CodeAIdapter 控制台",
+          "type": "webview"
+        }
+      ]
+    }
+  }, 
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
