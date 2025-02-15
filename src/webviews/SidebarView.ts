@@ -342,11 +342,19 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                     // 滾動到底部
                     // chatContainer.scrollTop = chatContainer.scrollHeight;
 
-                    // 設置定時器，每三秒顯示一次“請稍等”
+
+                    // 立即顯示第一條“請稍等”消息
+                    const waitingMessage = document.createElement('div');
+                    waitingMessage.classList.add('message', 'ai-message');
+                    waitingMessage.textContent = "請稍等一下...正在思考中...";
+                    chatContainer.appendChild(waitingMessage);
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+
+                    // 設置定時器，每五秒顯示一次“請稍等”
                     waitingInterval = setInterval(() => {
                         const waitingMessage = document.createElement('div');
                         waitingMessage.classList.add('message', 'ai-message');
-                        waitingMessage.textContent = "請稍等...";
+                        waitingMessage.textContent = "快好了...";
                         chatContainer.appendChild(waitingMessage);
                         chatContainer.scrollTop = chatContainer.scrollHeight;
                     }, 5000);
