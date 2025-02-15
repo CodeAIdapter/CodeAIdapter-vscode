@@ -98,6 +98,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
             // this._view?.webview.postMessage({ command: 'updateFileContent', content: content.substring(0, 200) }); // 只傳前 200 字
             this._view?.webview.postMessage({
                 command: 'updateFileName',
+                file: content,
                 fileName: fileName
             });
         }
@@ -440,6 +441,13 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
                         if (message.command === 'updateFileName') {
                             console.log("收到來自 VS Code 的檔名:", message.fileName);
                             document.getElementById('fileContent').innerText = message.fileName || "（沒有開啟的檔案）";
+                            // 預設選擇的檔案
+                            fileNameDisplay.textContent = message.fileName || "未選擇檔案";
+                            // 模拟文件选择
+                            const file = new File([message.file], message.fileName, { type: "text/plain" });
+                            const dataTransfer = new DataTransfer();
+                            dataTransfer.items.add(file);
+                            fileInput.files = dataTransfer.files;
                         }
 
                         // **AI 訊息顯示在 UI**
